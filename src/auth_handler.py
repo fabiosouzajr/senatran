@@ -17,7 +17,11 @@ from config import (
     LOGIN_SUCCESS_INDICATORS,
     CERTIFICATE_CONFIG,
     BROWSER_CONFIG,
+    HUMAN_BEHAVIOR_CONFIG,
+    CAPTCHA_CONFIG,
 )
+from captcha_handler import CaptchaHandler
+from human_behavior import HumanBehavior
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +55,10 @@ class AuthHandler:
         self.cert_helper = CertificateHelper() if CERTIFICATE_HELPER_AVAILABLE else None
         self._verify_certificate_config()
         # Note: Certificate installation check is now done before browser initialization in main.py
+        
+        # Initialize CAPTCHA handler
+        screenshot_dir = CAPTCHA_CONFIG.get('screenshot_dir') if CAPTCHA_CONFIG.get('screenshot_on_detection', False) else None
+        self.captcha_handler = CaptchaHandler(page, screenshot_dir) if CAPTCHA_CONFIG.get('detection_enabled', True) else None
     
     def _verify_certificate_config(self):
         """Verify certificate configuration and file existence."""
@@ -98,8 +106,11 @@ class AuthHandler:
                     logger.warning("Navigation timeout, proceeding anyway...")
                     self.page.goto(SENATRAN_HOME_URL, timeout=10000)
             
-            # Additional wait for page to stabilize
-            time.sleep(DELAYS['page_load'])
+            # Additional wait for page to stabilize (use human behavior if enabled)
+            if HUMAN_BEHAVIOR_CONFIG.get('enabled', True) and HUMAN_BEHAVIOR_CONFIG.get('use_variable_delays', True):
+                HumanBehavior.sleep_with_variance(DELAYS['page_load'], HUMAN_BEHAVIOR_CONFIG.get('delay_variance', 0.3))
+            else:
+                time.sleep(DELAYS['page_load'])
             
             # Verify we're on the right page
             current_url = self.page.url
@@ -124,14 +135,26 @@ class AuthHandler:
                         logger.error("Could not find 'Entrar com' button")
                         return False
                 
-                # Wait before clicking to avoid captcha
+                # Wait before clicking to avoid captcha (use human behavior if enabled)
                 wait_time = DELAYS.get('before_login_click', 5)
-                logger.info(f"Waiting {wait_time} seconds before clicking login button (anti-captcha)...")
-                time.sleep(wait_time)
+                logger.info(f"Waiting before clicking login button (anti-captcha)...")
+                if HUMAN_BEHAVIOR_CONFIG.get('enabled', True) and HUMAN_BEHAVIOR_CONFIG.get('use_variable_delays', True):
+                    HumanBehavior.sleep_with_variance(wait_time, HUMAN_BEHAVIOR_CONFIG.get('delay_variance', 0.3))
+                else:
+                    time.sleep(wait_time)
                 
                 logger.info("Clicking 'Entrar com' button...")
-                entrar_button.first.click()
-                time.sleep(DELAYS['after_click'])
+                # Use human-like click if enabled
+                if HUMAN_BEHAVIOR_CONFIG.get('enabled', True) and HUMAN_BEHAVIOR_CONFIG.get('simulate_mouse_movement', True):
+                    HumanBehavior.click_with_human_behavior(self.page, entrar_button.first)
+                else:
+                    entrar_button.first.click()
+                
+                # Wait after click (use human behavior if enabled)
+                if HUMAN_BEHAVIOR_CONFIG.get('enabled', True) and HUMAN_BEHAVIOR_CONFIG.get('use_variable_delays', True):
+                    HumanBehavior.sleep_with_variance(DELAYS['after_click'], HUMAN_BEHAVIOR_CONFIG.get('delay_variance', 0.3))
+                else:
+                    time.sleep(DELAYS['after_click'])
                 
             except Exception as e:
                 logger.error(f"Error clicking login button: {e}")
@@ -211,32 +234,46 @@ class AuthHandler:
                 elif "sso.acesso.gov.br" in current_url:
                     # Check for error messages or certificate selection prompts
                     try:
-                        # Check for captcha error - pause and wait for manual solving
-                        captcha_error = self.page.locator('text=/captcha.*inválido|captcha.*invalid|captcha/i')
-                        if captcha_error.count() > 0:
-                            error_text = captcha_error.first.inner_text()
-                            logger.warning("="*60)
-                            logger.warning("⚠ CAPTCHA DETECTED - PAUSING FOR MANUAL SOLVING")
-                            logger.warning("="*60)
-                            logger.warning(f"Captcha message: {error_text[:200]}")
-                            logger.warning("")
-                            logger.warning("The automation is now PAUSED. Please:")
-                            logger.warning("  1. Look at the browser window")
-                            logger.warning("  2. Solve the captcha manually")
-                            logger.warning("  3. Wait for the page to update")
-                            logger.warning("")
-                            logger.warning("The automation will automatically continue once the captcha is solved.")
-                            logger.warning("="*60)
-                            
-                            # Wait for captcha to be solved
-                            captcha_solved = self._wait_for_captcha_solution(max_wait=300)  # 5 minutes max
-                            if not captcha_solved:
-                                logger.error("Captcha was not solved within 5 minutes. Aborting.")
-                                return False
-                            else:
-                                logger.info("✓ Captcha appears to be solved. Continuing authentication...")
-                                # Continue waiting for redirect
-                                continue
+                        # Check for CAPTCHA using new handler
+                        if self.captcha_handler:
+                            detection = self.captcha_handler.detect_captcha()
+                            if detection['detected']:
+                                # Handle CAPTCHA
+                                max_wait = CAPTCHA_CONFIG.get('max_wait_time', 300)
+                                if not self.captcha_handler.handle_captcha(max_wait=max_wait):
+                                    logger.error("CAPTCHA was not solved within timeout. Aborting.")
+                                    return False
+                                else:
+                                    logger.info("✓ CAPTCHA appears to be solved. Continuing authentication...")
+                                    # Continue waiting for redirect
+                                    continue
+                        else:
+                            # Fallback to old detection method
+                            captcha_error = self.page.locator('text=/captcha.*inválido|captcha.*invalid|captcha/i')
+                            if captcha_error.count() > 0:
+                                error_text = captcha_error.first.inner_text()
+                                logger.warning("="*60)
+                                logger.warning("⚠ CAPTCHA DETECTED - PAUSING FOR MANUAL SOLVING")
+                                logger.warning("="*60)
+                                logger.warning(f"Captcha message: {error_text[:200]}")
+                                logger.warning("")
+                                logger.warning("The automation is now PAUSED. Please:")
+                                logger.warning("  1. Look at the browser window")
+                                logger.warning("  2. Solve the captcha manually")
+                                logger.warning("  3. Wait for the page to update")
+                                logger.warning("")
+                                logger.warning("The automation will automatically continue once the captcha is solved.")
+                                logger.warning("="*60)
+                                
+                                # Wait for captcha to be solved
+                                captcha_solved = self._wait_for_captcha_solution(max_wait=300)  # 5 minutes max
+                                if not captcha_solved:
+                                    logger.error("Captcha was not solved within 5 minutes. Aborting.")
+                                    return False
+                                else:
+                                    logger.info("✓ Captcha appears to be solved. Continuing authentication...")
+                                    # Continue waiting for redirect
+                                    continue
                         
                         # Check for certificate not found error
                         cert_not_found = self.page.locator('text=/certificado.*não.*encontrado|certificado.*not.*found/i')
@@ -286,8 +323,11 @@ class AuthHandler:
                     logger.warning("Certificate selection may require password or manual intervention")
                 return False
             
-            # Additional wait for page to fully load
-            time.sleep(DELAYS['page_load'])
+            # Additional wait for page to fully load (use human behavior if enabled)
+            if HUMAN_BEHAVIOR_CONFIG.get('enabled', True) and HUMAN_BEHAVIOR_CONFIG.get('use_variable_delays', True):
+                HumanBehavior.sleep_with_variance(DELAYS['page_load'], HUMAN_BEHAVIOR_CONFIG.get('delay_variance', 0.3))
+            else:
+                time.sleep(DELAYS['page_load'])
             
             # Step 6: Verify login success
             logger.info("Verifying login status...")
@@ -334,7 +374,10 @@ class AuthHandler:
             
             # Wait a moment for SSO page to fully load (longer to avoid captcha)
             logger.info("Waiting for SSO page to fully load...")
-            time.sleep(DELAYS.get('page_load', 5))
+            if HUMAN_BEHAVIOR_CONFIG.get('enabled', True) and HUMAN_BEHAVIOR_CONFIG.get('use_variable_delays', True):
+                HumanBehavior.sleep_with_variance(DELAYS.get('page_load', 5), HUMAN_BEHAVIOR_CONFIG.get('delay_variance', 0.3))
+            else:
+                time.sleep(DELAYS.get('page_load', 5))
             
             # Check current URL
             current_url = self.page.url
@@ -361,12 +404,23 @@ class AuthHandler:
                     pass
                 
                 logger.info("Clicking certificate selection button...")
-                # Wait a bit before clicking to avoid captcha
-                time.sleep(DELAYS.get('before_certificate_click', 2))
+                # Wait a bit before clicking to avoid captcha (use human behavior if enabled)
+                if HUMAN_BEHAVIOR_CONFIG.get('enabled', True) and HUMAN_BEHAVIOR_CONFIG.get('use_variable_delays', True):
+                    HumanBehavior.sleep_with_variance(DELAYS.get('before_certificate_click', 2), HUMAN_BEHAVIOR_CONFIG.get('delay_variance', 0.3))
+                else:
+                    time.sleep(DELAYS.get('before_certificate_click', 2))
                 try:
-                    cert_element.first.click()
+                    # Use human-like click if enabled
+                    if HUMAN_BEHAVIOR_CONFIG.get('enabled', True) and HUMAN_BEHAVIOR_CONFIG.get('simulate_mouse_movement', True):
+                        HumanBehavior.click_with_human_behavior(self.page, cert_element.first)
+                    else:
+                        cert_element.first.click()
                     logger.info("✓ Certificate button clicked - certificate dialog should appear")
-                    time.sleep(DELAYS['after_click'])
+                    # Wait after click (use human behavior if enabled)
+                    if HUMAN_BEHAVIOR_CONFIG.get('enabled', True) and HUMAN_BEHAVIOR_CONFIG.get('use_variable_delays', True):
+                        HumanBehavior.sleep_with_variance(DELAYS['after_click'], HUMAN_BEHAVIOR_CONFIG.get('delay_variance', 0.3))
+                    else:
+                        time.sleep(DELAYS['after_click'])
                 except Exception as e:
                     logger.error(f"Error clicking certificate button: {e}")
                     logger.info("Trying alternative click method...")
@@ -479,32 +533,92 @@ class AuthHandler:
                 
                 # Check for error messages on SSO page
                 try:
-                    # Check for captcha error - pause and wait for manual solving
-                    captcha_error = self.page.locator('text=/captcha.*inválido|captcha.*invalid|captcha/i')
-                    if captcha_error.count() > 0:
-                        error_text = captcha_error.first.inner_text()
+                    # Check for ERL0033800 error code (common SSO error)
+                    erl_error = self.page.locator('text=/ERL0033800/i')
+                    if erl_error.count() > 0:
+                        error_text = erl_error.first.inner_text()
                         logger.warning("="*60)
-                        logger.warning("⚠ CAPTCHA DETECTED - PAUSING FOR MANUAL SOLVING")
+                        logger.warning("⚠ SSO ERROR DETECTED (ERL0033800)")
                         logger.warning("="*60)
-                        logger.warning(f"Captcha message: {error_text[:200]}")
+                        logger.warning(f"Error message: {error_text[:300]}")
                         logger.warning("")
-                        logger.warning("The automation is now PAUSED. Please:")
-                        logger.warning("  1. Look at the browser window")
-                        logger.warning("  2. Solve the captcha manually")
-                        logger.warning("  3. Wait for the page to update")
-                        logger.warning("")
-                        logger.warning("The automation will automatically continue once the captcha is solved.")
-                        logger.warning("="*60)
                         
-                        # Wait for captcha to be solved (check every 2 seconds)
-                        captcha_solved = self._wait_for_captcha_solution(max_wait=300)  # 5 minutes max
-                        if not captcha_solved:
-                            logger.error("Captcha was not solved within 5 minutes. Aborting.")
-                            return False
+                        # Check if it's a captcha error
+                        if "captcha" in error_text.lower() or "inválido" in error_text.lower():
+                            logger.warning("This appears to be a CAPTCHA error.")
+                            logger.warning("The automation is now PAUSED. Please:")
+                            logger.warning("  1. Look at the browser window")
+                            logger.warning("  2. Solve the captcha manually (if visible)")
+                            logger.warning("  3. Refresh the page if needed")
+                            logger.warning("  4. Wait for the page to update")
+                            logger.warning("")
+                            logger.warning("The automation will automatically continue once resolved.")
+                            logger.warning("="*60)
+                            
+                            # Wait for error to be resolved
+                            error_resolved = self._wait_for_error_resolution(max_wait=300)  # 5 minutes max
+                            if not error_resolved:
+                                logger.error("Error was not resolved within 5 minutes. Aborting.")
+                                return False
+                            else:
+                                logger.info("✓ Error appears to be resolved. Continuing authentication...")
+                                # Continue waiting for certificate selection
+                                continue
                         else:
-                            logger.info("✓ Captcha appears to be solved. Continuing authentication...")
-                            # Continue waiting for certificate selection
-                            continue
+                            logger.warning("This may be a different SSO error.")
+                            logger.warning("Please check the browser window for details.")
+                            logger.warning("The automation will wait for the error to clear.")
+                            logger.warning("="*60)
+                            
+                            # Wait for error to be resolved
+                            error_resolved = self._wait_for_error_resolution(max_wait=300)
+                            if not error_resolved:
+                                logger.error("Error was not resolved within 5 minutes. Aborting.")
+                                return False
+                            else:
+                                logger.info("✓ Error appears to be resolved. Continuing authentication...")
+                                continue
+                    
+                    # Check for CAPTCHA using new handler
+                    if self.captcha_handler:
+                        detection = self.captcha_handler.detect_captcha()
+                        if detection['detected']:
+                            # Handle CAPTCHA
+                            max_wait = CAPTCHA_CONFIG.get('max_wait_time', 300)
+                            if not self.captcha_handler.handle_captcha(max_wait=max_wait):
+                                logger.error("CAPTCHA was not solved within timeout. Aborting.")
+                                return False
+                            else:
+                                logger.info("✓ CAPTCHA appears to be solved. Continuing authentication...")
+                                # Continue waiting for certificate selection
+                                continue
+                    else:
+                        # Fallback to old detection method
+                        captcha_error = self.page.locator('text=/captcha.*inválido|captcha.*invalid|captcha/i')
+                        if captcha_error.count() > 0:
+                            error_text = captcha_error.first.inner_text()
+                            logger.warning("="*60)
+                            logger.warning("⚠ CAPTCHA DETECTED - PAUSING FOR MANUAL SOLVING")
+                            logger.warning("="*60)
+                            logger.warning(f"Captcha message: {error_text[:200]}")
+                            logger.warning("")
+                            logger.warning("The automation is now PAUSED. Please:")
+                            logger.warning("  1. Look at the browser window")
+                            logger.warning("  2. Solve the captcha manually")
+                            logger.warning("  3. Wait for the page to update")
+                            logger.warning("")
+                            logger.warning("The automation will automatically continue once the captcha is solved.")
+                            logger.warning("="*60)
+                            
+                            # Wait for captcha to be solved (check every 2 seconds)
+                            captcha_solved = self._wait_for_captcha_solution(max_wait=300)  # 5 minutes max
+                            if not captcha_solved:
+                                logger.error("Captcha was not solved within 5 minutes. Aborting.")
+                                return False
+                            else:
+                                logger.info("✓ Captcha appears to be solved. Continuing authentication...")
+                                # Continue waiting for certificate selection
+                                continue
                     
                     # Check for certificate not found error
                     cert_not_found = self.page.locator('text=/certificado.*não.*encontrado|certificado.*not.*found/i')
@@ -565,6 +679,66 @@ class AuthHandler:
         except Exception as e:
             logger.error(f"Error handling certificate selection: {e}")
             return False
+    
+    def _wait_for_error_resolution(self, max_wait: int = 300) -> bool:
+        """
+        Wait for SSO error (like ERL0033800) to be resolved.
+        
+        Args:
+            max_wait: Maximum time to wait in seconds (default 5 minutes)
+        
+        Returns:
+            True if error appears to be resolved, False if timeout
+        """
+        logger.info(f"Waiting up to {max_wait} seconds for error to be resolved...")
+        start_time = time.time()
+        last_url = self.page.url
+        
+        while time.time() - start_time < max_wait:
+            elapsed = int(time.time() - start_time)
+            
+            # Check every 5 seconds
+            if elapsed % 5 == 0 and elapsed > 0:
+                logger.info(f"[{elapsed}s] Waiting for error resolution... (check browser window)")
+            
+            try:
+                current_url = self.page.url
+                
+                # Check if URL changed (might indicate error resolved and redirect)
+                if current_url != last_url:
+                    logger.info(f"URL changed: {last_url} -> {current_url}")
+                    last_url = current_url
+                    
+                    # If redirected away from SSO login, error might be resolved
+                    if "sso.acesso.gov.br/login" not in current_url:
+                        logger.info("Redirected away from SSO login page - error may be resolved")
+                        return True
+                
+                # Check if ERL0033800 error is still present
+                erl_error = self.page.locator('text=/ERL0033800/i')
+                if erl_error.count() == 0:
+                    # Error disappeared - might be resolved
+                    logger.info("Error message no longer present - checking if resolved...")
+                    time.sleep(2)  # Wait a moment for page to update
+                    
+                    # Check again to confirm
+                    erl_error = self.page.locator('text=/ERL0033800/i')
+                    if erl_error.count() == 0:
+                        logger.info("✓ Error cleared - appears to be resolved")
+                        return True
+                
+                # Check if we're on certificate info page or redirected to Senatran
+                if "acesso.gov.br/info/x509" in current_url or "portalservicos.senatran" in current_url:
+                    logger.info("Redirected to certificate info or Senatran - error resolved")
+                    return True
+                
+            except Exception as e:
+                logger.debug(f"Error checking error status: {e}")
+            
+            time.sleep(2)  # Check every 2 seconds
+        
+        logger.warning(f"Timeout waiting for error resolution after {max_wait} seconds")
+        return False
     
     def _wait_for_captcha_solution(self, max_wait: int = 300) -> bool:
         """

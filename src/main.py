@@ -8,6 +8,7 @@ import sys
 import time
 import logging
 import argparse
+import random
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
@@ -19,11 +20,17 @@ from config import (
     DELAYS,
     RATE_LIMITING,
     LOGGING_CONFIG,
+    STEALTH_CONFIG,
+    FINGERPRINT_CONFIG,
+    HUMAN_BEHAVIOR_CONFIG,
+    CAPTCHA_CONFIG,
 )
 from auth_handler import AuthHandler
 from vehicle_scraper import VehicleScraper
 from fine_extractor import FineExtractor
 from database import DatabaseManager
+from fingerprint_manager import FingerprintManager
+from human_behavior import HumanBehavior
 
 # Try to import certificate checker
 try:
@@ -60,6 +67,8 @@ class SenatranAutomation:
         self.context = None
         self.page = None
         self.db = None
+        self.fingerprint_manager = FingerprintManager() if FINGERPRINT_CONFIG.get('enabled', True) else None
+        self.current_fingerprint = None
     
     def check_certificate(self) -> bool:
         """
@@ -140,18 +149,96 @@ class SenatranAutomation:
         browser_config = BROWSER_CONFIG.copy()
         browser_config['headless'] = self.headless
         
+        # Generate fingerprint if enabled
+        fingerprint = None
+        if self.fingerprint_manager and FINGERPRINT_CONFIG.get('enabled', True):
+            fingerprint = self.fingerprint_manager.generate_fingerprint()
+            self.current_fingerprint = fingerprint
+            logger.info("Generated browser fingerprint for stealth")
+        else:
+            # Use default config
+            fingerprint = {
+                'user_agent': browser_config['user_agent'],
+                'viewport': browser_config['viewport'],
+            }
+        
+        # Launch browser
         self.browser = self.playwright.chromium.launch(
             headless=browser_config['headless'],
             slow_mo=browser_config['slow_mo']
         )
         
-        self.context = self.browser.new_context(
-            viewport=browser_config['viewport'],
-            user_agent=browser_config['user_agent']
-        )
+        # Create context with fingerprint
+        context_options = {
+            'viewport': fingerprint.get('viewport', browser_config['viewport']),
+            'user_agent': fingerprint.get('user_agent', browser_config['user_agent']),
+            'locale': fingerprint.get('locale', 'pt-BR'),
+            'timezone_id': fingerprint.get('timezone', 'America/Sao_Paulo'),
+        }
+        
+        self.context = self.browser.new_context(**context_options)
+        
+        # Apply stealth features if enabled
+        if STEALTH_CONFIG.get('enabled', True):
+            self._apply_stealth_features()
+        
+        # Apply fingerprint via CDP if enabled
+        if self.fingerprint_manager and FINGERPRINT_CONFIG.get('enabled', True):
+            self.fingerprint_manager.apply_fingerprint_to_context(self.context, fingerprint)
         
         self.page = self.context.new_page()
-        logger.info("Browser initialized")
+        logger.info("Browser initialized with stealth and fingerprint features")
+    
+    def _apply_stealth_features(self):
+        """Apply stealth features to browser context using CDP."""
+        try:
+            # Inject stealth script on every new page
+            stealth_script = """
+            // Remove webdriver property
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+            
+            // Override plugins
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1, 2, 3, 4, 5]
+            });
+            
+            // Override languages
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['pt-BR', 'pt', 'en-US', 'en']
+            });
+            
+            // Override permissions
+            const originalQuery = window.navigator.permissions.query;
+            window.navigator.permissions.query = (parameters) => (
+                parameters.name === 'notifications' ?
+                    Promise.resolve({ state: Notification.permission }) :
+                    originalQuery(parameters)
+            );
+            
+            // Chrome runtime
+            window.chrome = {
+                runtime: {}
+            };
+            
+            // Override WebGL getParameter
+            const getParameter = WebGLRenderingContext.prototype.getParameter;
+            WebGLRenderingContext.prototype.getParameter = function(parameter) {
+                if (parameter === 37445) {
+                    return 'Intel Inc.';
+                }
+                if (parameter === 37446) {
+                    return 'Intel Iris OpenGL Engine';
+                }
+                return getParameter.call(this, parameter);
+            };
+            """
+            
+            self.context.add_init_script(stealth_script)
+            logger.info("Stealth features applied to browser context")
+        except Exception as e:
+            logger.warning(f"Error applying stealth features: {e}")
     
     def check_authentication_status(self) -> bool:
         """
@@ -281,11 +368,25 @@ class SenatranAutomation:
                     
                     stats['vehicles_processed'] += 1
                     
-                    # Rate limiting delay
+                    # Rate limiting delay (use enhanced rate limiting if available)
                     if i < len(vehicles):  # Don't delay after last vehicle
-                        delay = RATE_LIMITING['min_delay']
-                        logger.debug(f"Rate limiting delay: {delay} seconds")
-                        time.sleep(delay)
+                        from config import RATE_LIMITING_ENHANCED
+                        if RATE_LIMITING_ENHANCED.get('use_jitter', False):
+                            # Use jitter for more natural delays
+                            min_delay = RATE_LIMITING_ENHANCED.get('min_delay', RATE_LIMITING['min_delay'])
+                            max_delay = RATE_LIMITING_ENHANCED.get('max_delay', RATE_LIMITING['max_delay'])
+                            jitter_factor = RATE_LIMITING_ENHANCED.get('jitter_factor', 0.2)
+                            base_delay = (min_delay + max_delay) / 2
+                            delay = base_delay * (1 + random.uniform(-jitter_factor, jitter_factor))
+                            delay = max(min_delay, min(max_delay, delay))  # Clamp to range
+                        else:
+                            delay = RATE_LIMITING.get('min_delay', 2)
+                        
+                        logger.debug(f"Rate limiting delay: {delay:.2f} seconds")
+                        if HUMAN_BEHAVIOR_CONFIG.get('enabled', True) and HUMAN_BEHAVIOR_CONFIG.get('use_variable_delays', True):
+                            HumanBehavior.sleep_with_variance(delay, HUMAN_BEHAVIOR_CONFIG.get('delay_variance', 0.3))
+                        else:
+                            time.sleep(delay)
                 
                 except Exception as e:
                     logger.error(f"Error processing vehicle {vehicle_plate}: {e}")
