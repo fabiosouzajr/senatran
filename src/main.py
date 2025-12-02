@@ -211,6 +211,12 @@ class SenatranAutomation:
             ])
         
         # Add user data directory if policy is enabled
+        # This allows Chrome to read the policy file we created
+        if user_data_dir:
+            launch_args.append(f'--user-data-dir={user_data_dir}')
+            logger.info(f"Using user data directory: {user_data_dir}")
+        
+        # Launch browser
         launch_options = {
             'headless': browser_config['headless'],
             'slow_mo': browser_config['slow_mo'],
@@ -218,9 +224,6 @@ class SenatranAutomation:
         
         if launch_args:
             launch_options['args'] = launch_args
-        
-        if user_data_dir:
-            launch_options['user_data_dir'] = str(user_data_dir)
         
         self.browser = self.playwright.chromium.launch(**launch_options)
         

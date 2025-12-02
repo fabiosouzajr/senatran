@@ -1,0 +1,34 @@
+[
+  {
+    "pattern": "https://sso.acesso.gov.br/*",
+    "filter": {
+      "SUBJECT": {
+        "CN": "novamobilidade"
+      }
+    }
+  },
+  {
+    "pattern": "https://sso.acesso.gov.br/*",
+    "filter": {
+      "SUBJECT": {
+        "CN": "*novamobilidade*"
+      }
+    }
+  },
+  {
+    "pattern": "https://*.acesso.gov.br/*",
+    "filter": {
+      "SUBJECT": {
+        "CN": "novamobilidade"
+      }
+    }
+  },
+  {
+    "pattern": "https://*.acesso.gov.br/*",
+    "filter": {
+      "SUBJECT": {
+        "CN": "*novamobilidade*"
+      }
+    }
+  }
+]

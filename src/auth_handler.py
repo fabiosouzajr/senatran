@@ -533,18 +533,23 @@ class AuthHandler:
                 
                 # Check for error messages on SSO page
                 try:
-                    # Check for ERL0033800 error code (common SSO error)
-                    erl_error = self.page.locator('text=/ERL0033800/i')
+                    # Check for ERL error codes (common SSO errors: ERL0033800, ERL0002200, etc.)
+                    erl_error = self.page.locator('text=/ERL\d+/i')
                     if erl_error.count() > 0:
                         error_text = erl_error.first.inner_text()
+                        # Extract error code
+                        import re
+                        match = re.search(r'ERL\d+', error_text)
+                        error_code = match.group() if match else "UNKNOWN"
+                        
                         logger.warning("="*60)
-                        logger.warning("⚠ SSO ERROR DETECTED (ERL0033800)")
+                        logger.warning(f"⚠ SSO ERROR DETECTED ({error_code})")
                         logger.warning("="*60)
                         logger.warning(f"Error message: {error_text[:300]}")
                         logger.warning("")
                         
                         # Check if it's a captcha error
-                        if "captcha" in error_text.lower() or "inválido" in error_text.lower():
+                        if "captcha" in error_text.lower() or "inválido" in error_text.lower() or error_code in ['ERL0033800', 'ERL0002200']:
                             logger.warning("This appears to be a CAPTCHA error.")
                             logger.warning("The automation is now PAUSED. Please:")
                             logger.warning("  1. Look at the browser window")
@@ -714,15 +719,15 @@ class AuthHandler:
                         logger.info("Redirected away from SSO login page - error may be resolved")
                         return True
                 
-                # Check if ERL0033800 error is still present
-                erl_error = self.page.locator('text=/ERL0033800/i')
+                # Check if ERL error is still present (any ERL code)
+                erl_error = self.page.locator('text=/ERL\d+/i')
                 if erl_error.count() == 0:
                     # Error disappeared - might be resolved
                     logger.info("Error message no longer present - checking if resolved...")
                     time.sleep(2)  # Wait a moment for page to update
                     
                     # Check again to confirm
-                    erl_error = self.page.locator('text=/ERL0033800/i')
+                    erl_error = self.page.locator('text=/ERL\d+/i')
                     if erl_error.count() == 0:
                         logger.info("✓ Error cleared - appears to be resolved")
                         return True

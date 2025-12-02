@@ -45,6 +45,8 @@ class CaptchaHandler:
         ],
         'error_message': [
             'text=/ERL0033800/i',
+            'text=/ERL0002200/i',
+            'text=/ERL\d+/i',  # Match any ERL error code
             'text=/erro.*captcha|error.*captcha/i',
             'text=/captcha.*inválido|captcha.*invalid/i',
         ],
@@ -199,17 +201,31 @@ class CaptchaHandler:
                             logger.info("✓ CAPTCHA appears to be solved")
                             return True
                 
-                # Check for ERL0033800 error (invalid CAPTCHA)
-                erl_error = self.page.locator('text=/ERL0033800/i')
+                # Check for ERL error codes (invalid CAPTCHA or other SSO errors)
+                erl_error = self.page.locator('text=/ERL\d+/i')
                 if erl_error.count() > 0:
                     error_text = erl_error.first.inner_text()
-                    if "inválido" in error_text.lower() or "invalid" in error_text.lower():
-                        logger.warning("⚠ CAPTCHA was marked as INVALID (ERL0033800)")
-                        logger.warning("The CAPTCHA you solved was rejected. Please solve it again.")
+                    error_code = None
+                    
+                    # Extract error code
+                    import re
+                    match = re.search(r'ERL\d+', error_text)
+                    if match:
+                        error_code = match.group()
+                    
+                    if "inválido" in error_text.lower() or "invalid" in error_text.lower() or error_code in ['ERL0033800', 'ERL0002200']:
+                        logger.warning(f"⚠ CAPTCHA/SSO ERROR DETECTED ({error_code or 'UNKNOWN'})")
+                        logger.warning(f"Error message: {error_text[:200]}")
+                        logger.warning("")
+                        if error_code in ['ERL0033800', 'ERL0002200']:
+                            logger.warning("This error typically means:")
+                            logger.warning("  1. The CAPTCHA was rejected (even if solved correctly)")
+                            logger.warning("  2. There may be rate limiting or bot detection")
+                            logger.warning("  3. A new CAPTCHA should appear - please solve it again")
                         logger.warning("Waiting for you to solve the new CAPTCHA...")
                         # Take new screenshot
                         if self.screenshot_dir:
-                            self.take_screenshot("captcha_invalid_retry.png")
+                            self.take_screenshot(f"captcha_error_{error_code or 'unknown'}.png")
                         # Continue waiting - a new CAPTCHA should appear
                         time.sleep(check_interval)
                         continue
