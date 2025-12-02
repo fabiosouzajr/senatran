@@ -1,0 +1,72 @@
+# Certificados
+*.crt
+*.pem
+*.p12
+*.pfx
+
+# Logs
+*.log
+
+# Screenshots
+*.png
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+senatran_fines.db
+
+# Logs
+*.log
+senatran_automation.log
+
+# Screenshots from exploratory scripts
+*.png
+sso_page.png
+vehicle_list_page.png
+fine_details_page.png
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
