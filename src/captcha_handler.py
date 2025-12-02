@@ -46,6 +46,7 @@ class CaptchaHandler:
         'error_message': [
             'text=/ERL0033800/i',
             'text=/erro.*captcha|error.*captcha/i',
+            'text=/captcha.*inválido|captcha.*invalid/i',
         ],
     }
     
@@ -198,6 +199,21 @@ class CaptchaHandler:
                             logger.info("✓ CAPTCHA appears to be solved")
                             return True
                 
+                # Check for ERL0033800 error (invalid CAPTCHA)
+                erl_error = self.page.locator('text=/ERL0033800/i')
+                if erl_error.count() > 0:
+                    error_text = erl_error.first.inner_text()
+                    if "inválido" in error_text.lower() or "invalid" in error_text.lower():
+                        logger.warning("⚠ CAPTCHA was marked as INVALID (ERL0033800)")
+                        logger.warning("The CAPTCHA you solved was rejected. Please solve it again.")
+                        logger.warning("Waiting for you to solve the new CAPTCHA...")
+                        # Take new screenshot
+                        if self.screenshot_dir:
+                            self.take_screenshot("captcha_invalid_retry.png")
+                        # Continue waiting - a new CAPTCHA should appear
+                        time.sleep(check_interval)
+                        continue
+                
                 # Check if CAPTCHA is still present
                 detection = self.detect_captcha()
                 if not detection['detected']:
@@ -236,20 +252,34 @@ class CaptchaHandler:
         if not detection['detected']:
             return True  # No CAPTCHA present
         
-        logger.warning("="*60)
-        logger.warning("⚠ CAPTCHA DETECTED - PAUSING FOR MANUAL SOLVING")
-        logger.warning("="*60)
-        logger.warning(f"CAPTCHA type: {detection['type']}")
-        if detection['error_message']:
-            logger.warning(f"Error message: {detection['error_message']}")
-        logger.warning("")
-        logger.warning("The automation is now PAUSED. Please:")
-        logger.warning("  1. Look at the browser window")
-        logger.warning("  2. Solve the CAPTCHA manually")
-        logger.warning("  3. Wait for the page to update")
-        logger.warning("")
-        logger.warning("The automation will automatically continue once the CAPTCHA is solved.")
-        logger.warning("="*60)
+        # Check if it's an error message (like ERL0033800)
+        if detection['type'] == 'error_message':
+            logger.warning("="*60)
+            logger.warning("⚠ CAPTCHA ERROR DETECTED")
+            logger.warning("="*60)
+            if detection['error_message']:
+                logger.warning(f"Error: {detection['error_message']}")
+            logger.warning("")
+            logger.warning("This usually means:")
+            logger.warning("  1. A previous CAPTCHA was invalid")
+            logger.warning("  2. A new CAPTCHA will appear")
+            logger.warning("  3. Please solve the new CAPTCHA when it appears")
+            logger.warning("="*60)
+        else:
+            logger.warning("="*60)
+            logger.warning("⚠ CAPTCHA DETECTED - PAUSING FOR MANUAL SOLVING")
+            logger.warning("="*60)
+            logger.warning(f"CAPTCHA type: {detection['type']}")
+            if detection['error_message']:
+                logger.warning(f"Error message: {detection['error_message']}")
+            logger.warning("")
+            logger.warning("The automation is now PAUSED. Please:")
+            logger.warning("  1. Look at the browser window")
+            logger.warning("  2. Solve the CAPTCHA manually")
+            logger.warning("  3. Wait for the page to update")
+            logger.warning("")
+            logger.warning("The automation will automatically continue once the CAPTCHA is solved.")
+            logger.warning("="*60)
         
         # Take screenshot for reference
         if self.screenshot_dir:

@@ -25,6 +25,8 @@ BROWSER_CONFIG = {
     'slow_mo': 1000,  # Slow down actions by 1 second (helps avoid detection)
     'viewport': {'width': 1920, 'height': 1080},
     'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'window_size': {'width': 1280, 'height': 720},  # Window size (not maximized)
+    'no_viewport': False,  # Set to True to use window size instead of viewport
 }
 
 # Timing configuration (in seconds)

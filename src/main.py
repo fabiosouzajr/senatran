@@ -24,6 +24,8 @@ from config import (
     FINGERPRINT_CONFIG,
     HUMAN_BEHAVIOR_CONFIG,
     CAPTCHA_CONFIG,
+    CERTIFICATE_CONFIG,
+    BASE_DIR,
 )
 from auth_handler import AuthHandler
 from vehicle_scraper import VehicleScraper
@@ -31,6 +33,7 @@ from fine_extractor import FineExtractor
 from database import DatabaseManager
 from fingerprint_manager import FingerprintManager
 from human_behavior import HumanBehavior
+from certificate_policy import CertificatePolicyManager
 
 # Try to import certificate checker
 try:
@@ -69,6 +72,7 @@ class SenatranAutomation:
         self.db = None
         self.fingerprint_manager = FingerprintManager() if FINGERPRINT_CONFIG.get('enabled', True) else None
         self.current_fingerprint = None
+        self.cert_policy_manager = None
     
     def check_certificate(self) -> bool:
         """
@@ -162,11 +166,63 @@ class SenatranAutomation:
                 'viewport': browser_config['viewport'],
             }
         
-        # Launch browser
-        self.browser = self.playwright.chromium.launch(
-            headless=browser_config['headless'],
-            slow_mo=browser_config['slow_mo']
-        )
+        # Setup certificate auto-selection policy if enabled
+        user_data_dir = None
+        if CERTIFICATE_CONFIG.get('auto_select_certificate', True):
+            logger.info("Setting up certificate auto-selection policy...")
+            self.cert_policy_manager = CertificatePolicyManager()
+            
+            # Get URLs that require certificate
+            cert_urls = [
+                "https://sso.acesso.gov.br/*",
+                "https://*.acesso.gov.br/*",
+            ]
+            
+            cert_name = CERTIFICATE_CONFIG.get('certificate_name', 'novamobilidade')
+            
+            # Create a persistent user data directory for policy file
+            user_data_dir = BASE_DIR / '.playwright_user_data'
+            user_data_dir.mkdir(exist_ok=True)
+            
+            # Setup policy in user data directory
+            # Note: We need to create the policy file before launching the browser
+            # so Chrome can read it on startup
+            self.cert_policy_manager.user_data_dir = user_data_dir
+            policy_success = self.cert_policy_manager.setup_certificate_policy(
+                urls=cert_urls,
+                certificate_name=cert_name,
+                user_data_dir=user_data_dir
+            )
+            
+            if policy_success:
+                logger.info("✓ Certificate auto-selection policy configured")
+            else:
+                logger.warning("⚠ Could not create certificate policy file (will use manual selection)")
+        
+        # Launch browser with window size arguments (to prevent fullscreen)
+        window_size = browser_config.get('window_size', {'width': 1280, 'height': 720})
+        launch_args = []
+        
+        if not browser_config['headless']:
+            # Set window size to prevent fullscreen
+            launch_args.extend([
+                f'--window-size={window_size["width"]},{window_size["height"]}',
+                '--start-maximized=false',
+            ])
+        
+        # Add user data directory if policy is enabled
+        launch_options = {
+            'headless': browser_config['headless'],
+            'slow_mo': browser_config['slow_mo'],
+        }
+        
+        if launch_args:
+            launch_options['args'] = launch_args
+        
+        if user_data_dir:
+            launch_options['user_data_dir'] = str(user_data_dir)
+        
+        self.browser = self.playwright.chromium.launch(**launch_options)
         
         # Create context with fingerprint
         context_options = {
