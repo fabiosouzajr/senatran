@@ -9,6 +9,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright, BrowserContext, Page
 
 import config
+from fine_scrapper import getfines
 
 
 async def create_persistent_context(playwright) -> BrowserContext:
@@ -88,15 +89,13 @@ async def open_browser_and_wait():
             input()
             
             print("\nContinuing with automation...")
-            print("Browser will remain open. Add your automation code here.")
+            print("Starting fine scraping process...\n")
             
-            # Keep the browser open for further automation
-            # You can add your automation code here
-            # For now, we'll keep it running until manually closed
+            # Call the fine scraper
+            await getfines(page)
             
-            # Wait indefinitely (or until browser is closed)
-            # In a real scenario, you'd add your automation logic here
-            print("Browser is running. Close the browser window or press Ctrl+C to exit.")
+            print("\nFine scraping completed.")
+            print("Browser will remain open. Close the browser window or press Ctrl+C to exit.")
             
             # Keep the script running
             try:
