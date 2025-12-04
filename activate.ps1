@@ -1,24 +1,10 @@
-# PowerShell activation script for Senatran automation virtual environment
+# PowerShell script to activate the virtual environment
+# Run this script from the project root directory
 
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$VenvDir = Join-Path $ScriptDir ".venv"
-
-if (-not (Test-Path $VenvDir)) {
-    Write-Host "Virtual environment not found at $VenvDir"
-    Write-Host "Creating virtual environment..."
-    python -m venv $VenvDir
-    Write-Host "Installing dependencies..."
-    & "$VenvDir\Scripts\pip.exe" install -r "$ScriptDir\requirements.txt"
-    & "$VenvDir\Scripts\playwright.exe" install chromium
-    Write-Host "Virtual environment created and dependencies installed!"
+if (Test-Path "venv\Scripts\Activate.ps1") {
+    & "venv\Scripts\Activate.ps1"
+    Write-Host "Virtual environment activated!" -ForegroundColor Green
+} else {
+    Write-Host "Error: Virtual environment not found. Run setup.ps1 first." -ForegroundColor Red
 }
-
-Write-Host "Activating virtual environment..."
-& "$VenvDir\Scripts\Activate.ps1"
-
-Write-Host ""
-Write-Host "Virtual environment activated!"
-Write-Host "Python: $(Get-Command python | Select-Object -ExpandProperty Source)"
-Write-Host "To deactivate, run: deactivate"
-Write-Host ""
 

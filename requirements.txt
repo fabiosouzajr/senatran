@@ -1,8 +1,3 @@
 playwright>=1.40.0
 python-dotenv>=1.0.0
-pyautogui>=0.9.54
-fake-useragent>=1.4.0
-numpy>=1.24.0
-
-
 
