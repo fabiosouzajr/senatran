@@ -42,12 +42,16 @@ RECOMMENDATION:
 - Can be made configurable via config.py if needed
 """
 
+import asyncio
 import logging
+import random
 import sys
 from typing import List
 from playwright.async_api import Page, TimeoutError as PlaywrightTimeoutError
 
 import config
+import human_behavior
+from captcha_solver import detect_and_solve_captcha
 
 # Configure logging
 logging.basicConfig(
@@ -58,6 +62,27 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+
+async def wait_for_page_ready(page: Page, timeout: int = None) -> None:
+    """
+    Wait for page to be ready using lenient strategies suitable for SPAs.
+    Doesn't fail on timeout - just gives the page time to render.
+    
+    Args:
+        page: Playwright Page object
+        timeout: Timeout in milliseconds (uses config default if None)
+    """
+    if timeout is None:
+        timeout = config.DEFAULT_TIMEOUT
+    
+    try:
+        # Try to wait for load state, but use shorter timeout
+        await page.wait_for_load_state("load", timeout=min(10000, timeout // 3))
+    except Exception:
+        # If load state times out, just give SPA time to render
+        logger.debug("Load state timeout, giving page time to render...")
+        await asyncio.sleep(1.5)  # Give SPA time to initialize
 
 
 async def getfines(page: Page) -> None:
@@ -77,14 +102,28 @@ async def getfines(page: Page) -> None:
     try:
         logger.info("Starting fine scraping process...")
         
-        # Step 1: Navigate to FINES_URL
+        # Step 1: Navigate to FINES_URL with human-like behavior
         logger.info(f"Navigating to {config.FINES_URL}...")
-        await page.goto(
-            config.FINES_URL,
-            wait_until="domcontentloaded",
-            timeout=config.NAVIGATION_TIMEOUT,
-        )
-        logger.info("Page loaded successfully")
+        try:
+            await human_behavior.human_like_navigation(page, config.FINES_URL, timeout=config.NAVIGATION_TIMEOUT)
+            logger.info("Page loaded successfully")
+            
+            # Check for and solve CAPTCHA if present
+            if config.ENABLE_CAPTCHA_SOLVING:
+                logger.info("Checking for CAPTCHA...")
+                captcha_solved = await detect_and_solve_captcha(page)
+                if captcha_solved:
+                    logger.info("CAPTCHA solved successfully")
+                    # Wait a bit after solving
+                    await asyncio.sleep(2.0)
+                else:
+                    logger.debug("No CAPTCHA found or solving not needed")
+                    
+        except Exception as e:
+            logger.warning(f"Navigation timeout or error: {e}")
+            logger.info("Continuing anyway - page may still be usable")
+            # Give page additional time to render
+            await asyncio.sleep(2.0)
         
         # Step 2: Wait for the vehicle list component to appear
         logger.info("Waiting for vehicle list component to load...")
@@ -155,11 +194,18 @@ async def process_all_vehicle_pages(page: Page) -> None:
         
         # Navigate to next page
         logger.info("Navigating to next page...")
+        
+        # Random delay before navigating to next page
+        await human_behavior.random_delay(500, 1500)
+        
         await navigate_to_next_page(page)
         page_number += 1
         
-        # Wait for the new page to load
-        await page.wait_for_load_state("networkidle", timeout=config.DEFAULT_TIMEOUT)
+        # Wait for the new page to load (lenient approach for SPAs)
+        await wait_for_page_ready(page)
+        
+        # Simulate reading the new page
+        await human_behavior.simulate_reading(page, 1.0, 2.0)
 
 
 async def get_vehicle_items(page: Page) -> List:
@@ -180,8 +226,12 @@ async def get_vehicle_items(page: Page) -> List:
             state="visible"
         )
         
-        # Wait a bit for dynamic content to load
-        await page.wait_for_timeout(1000)  # Wait 1 second for content to render
+        # Wait for dynamic content to load with human-like delay
+        await human_behavior.simulate_reading(page, 1.0, 2.0)
+        
+        # Random scroll to simulate exploring the page
+        if random.random() < 0.6:  # 60% chance to scroll
+            await human_behavior.random_scroll(page, 1, 2)
         
         # Use XPath based on the provided structure
         # XPath for first vehicle: /html/body/.../app-infracao-veiculo-lista/form/div[3]/div[2]/div[1]/div[1]
@@ -263,12 +313,25 @@ async def process_vehicle(page: Page, vehicle_item, page_number: int, vehicle_in
     try:
         logger.info(f"Opening vehicle {vehicle_index} from page {page_number}...")
         
-        # Click on the vehicle item to open it
-        # vehicle_item is a Locator, so we can click it directly
-        await vehicle_item.click()
+        # Small random delay before clicking (simulating decision time)
+        await human_behavior.random_delay(300, 800)
         
-        # Wait for navigation to complete
-        await page.wait_for_load_state("networkidle", timeout=config.DEFAULT_TIMEOUT)
+        # Click on the vehicle item with human-like behavior
+        await human_behavior.human_like_click(page, vehicle_item, delay_before=False)
+        
+        # Wait for navigation to complete (lenient approach for SPAs)
+        await wait_for_page_ready(page)
+        
+        # Check for and solve CAPTCHA if present
+        if config.ENABLE_CAPTCHA_SOLVING:
+            logger.info("Checking for CAPTCHA on vehicle page...")
+            captcha_solved = await detect_and_solve_captcha(page)
+            if captcha_solved:
+                logger.info("CAPTCHA solved successfully")
+                await asyncio.sleep(2.0)
+        
+        # Simulate reading the page after navigation
+        await human_behavior.simulate_reading(page, 0.8, 1.5)
         
         # Wait for the vehicle details page to load
         # Wait for fine elements to appear (or check if we're on a page with fines)
@@ -302,7 +365,10 @@ async def process_vehicle(page: Page, vehicle_item, page_number: int, vehicle_in
             # TODO: Extract fine data in future implementation
             # Example: fine_data = await extract_fine_data(fine_element)
         
-        # Go back to vehicle list
+        # Small delay before going back
+        await human_behavior.random_delay(400, 1000)
+        
+        # Go back to vehicle list with human-like behavior
         await go_back_to_vehicle_list(page)
         
         # Wait for vehicle list to be visible again
@@ -311,6 +377,9 @@ async def process_vehicle(page: Page, vehicle_item, page_number: int, vehicle_in
             timeout=config.DEFAULT_TIMEOUT,
             state="visible"
         )
+        
+        # Simulate reading the list again
+        await human_behavior.simulate_reading(page, 0.5, 1.2)
         
         logger.info(f"Completed processing vehicle {vehicle_index} from page {page_number}")
         
@@ -326,28 +395,21 @@ async def process_vehicle(page: Page, vehicle_item, page_number: int, vehicle_in
 
 async def go_back_to_vehicle_list(page: Page) -> None:
     """
-    Navigate back to the vehicle list page.
+    Navigate back to the vehicle list page with human-like behavior.
     
     Args:
         page: Playwright Page object
     """
     try:
-        # Try browser back button first
-        await page.go_back()
+        # Use human-like back navigation
+        await human_behavior.human_like_back_navigation(page)
         logger.debug("Navigated back using browser back button")
-        
-        # Wait for navigation to complete
-        await page.wait_for_load_state("networkidle", timeout=config.DEFAULT_TIMEOUT)
         
     except Exception as e:
         logger.warning(f"Error going back to vehicle list: {e}")
-        # Alternative: navigate directly to FINES_URL
+        # Alternative: navigate directly to FINES_URL with human-like behavior
         logger.info("Attempting direct navigation to vehicle list...")
-        await page.goto(
-            config.FINES_URL,
-            wait_until="domcontentloaded",
-            timeout=config.NAVIGATION_TIMEOUT,
-        )
+        await human_behavior.human_like_navigation(page, config.FINES_URL)
 
 
 async def check_for_next_page(page: Page) -> bool:
@@ -418,12 +480,15 @@ async def navigate_to_next_page(page: Page) -> None:
         
         for selector in next_selectors:
             try:
-                next_button = await page.query_selector(selector)
-                if next_button:
-                    is_disabled = await next_button.get_attribute("disabled")
-                    class_name = await next_button.get_attribute("class") or ""
+                next_button_locator = page.locator(selector)
+                count = await next_button_locator.count()
+                if count > 0:
+                    # Check if button is disabled
+                    is_disabled = await next_button_locator.get_attribute("disabled")
+                    class_name = await next_button_locator.get_attribute("class") or ""
                     if is_disabled is None and "disabled" not in class_name.lower():
-                        await next_button.click()
+                        # Use human-like click
+                        await human_behavior.human_like_click(page, next_button_locator.first)
                         logger.info("Clicked next page button")
                         return
             except Exception:

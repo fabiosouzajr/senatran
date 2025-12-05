@@ -1,0 +1,6 @@
+Infracoes>
+/html/body/app-root/form/br-main-layout/div/div/main/app-infracao/app-infracoes-list/app-infracoes-veiculo-list/app-infrator-list/div/div/app-infracao-lista/form/div[3]/div[2]/div[1]/div
+
+/html/body/app-root/form/br-main-layout/div/div/main/app-infracao/app-infracoes-list/app-infracoes-veiculo-list/app-infrator-list/div/div/app-infracao-lista/form/div[3]/div[3]/div[1]/div
+
+body > app-root > form > br-main-layout > div > div > main > app-infracao > app-infracoes-list > app-infracoes-veiculo-list > app-infrator-list > div > div > app-infracao-lista > form > div.lista-infracoes.ng-star-inserted > div:nth-child(2) > div.row.ng-star-inserted > div

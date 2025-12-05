@@ -34,6 +34,11 @@ BROWSER_ARGS = [
     "--disable-web-security",
     "--disable-features=IsolateOrigins,site-per-process",
     "--disable-site-isolation-trials",
+    # Additional anti-detection flags
+    "--disable-infobars",  # Disable "Chrome is being controlled" infobar
+    "--disable-notifications",  # Disable notifications
+    "--disable-popup-blocking",  # Allow popups (more human-like)
+    "--lang=pt-BR",  # Set language to Portuguese (Brazil)
 ]
 
 # Viewport Configuration
@@ -52,4 +57,16 @@ WAIT_MESSAGE = os.getenv(
     "WAIT_MESSAGE",
     "Browser opened. Press Enter to continue with automation..."
 )
+
+# Human Behavior Configuration (to avoid CAPTCHA)
+ENABLE_HUMAN_BEHAVIOR = os.getenv("ENABLE_HUMAN_BEHAVIOR", "true").lower() == "true"
+MIN_DELAY_MS = int(os.getenv("MIN_DELAY_MS", "500"))  # Minimum delay between actions
+MAX_DELAY_MS = int(os.getenv("MAX_DELAY_MS", "2000"))  # Maximum delay between actions
+MIN_READING_TIME = float(os.getenv("MIN_READING_TIME", "1.0"))  # Minimum reading time in seconds
+MAX_READING_TIME = float(os.getenv("MAX_READING_TIME", "3.0"))  # Maximum reading time in seconds
+
+# CAPTCHA Solving Configuration
+CAPTCHA_API_KEY = os.getenv("CAPTCHA_API_KEY", None)  # 2Captcha API key
+ENABLE_CAPTCHA_SOLVING = os.getenv("ENABLE_CAPTCHA_SOLVING", "true").lower() == "true"
+CAPTCHA_SERVICE = os.getenv("CAPTCHA_SERVICE", "2captcha")  # Service to use: 2captcha, anticaptcha, etc.
 

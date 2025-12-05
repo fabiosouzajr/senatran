@@ -1,0 +1,193 @@
+{
+  "creepjs": {
+    "tool": "creepjs",
+    "url": "https://abrahamjuliot.github.io/creepjs/",
+    "timestamp": "2025-12-05T10:29:16.210704",
+    "automation_detected": true,
+    "warnings": [
+      "ServiceWorkerGlobalScope"
+    ],
+    "screenshot": "C:\\Users\\Fabiojr\\Documents\\git\\senatran\\fingerprint_test_results\\creepjs_screenshot.png"
+  },
+  "bot_sannysoft": {
+    "tool": "bot_sannysoft",
+    "url": "https://bot.sannysoft.com/",
+    "timestamp": "2025-12-05T10:29:23.092565",
+    "test_results": {
+      "Test Name": {
+        "result": "Result",
+        "status": ""
+      },
+      "User Agent\n(Old)": {
+        "result": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.7390.37 Safari/537.36",
+        "status": ""
+      },
+      "WebDriver\n(New)": {
+        "result": "missing (passed)",
+        "status": ""
+      },
+      "WebDriver Advanced": {
+        "result": "passed",
+        "status": ""
+      },
+      "Chrome\n(New)": {
+        "result": "missing (failed)",
+        "status": ""
+      },
+      "Permissions\n(New)": {
+        "result": "granted",
+        "status": ""
+      },
+      "Plugins Length\n(Old)": {
+        "result": "0",
+        "status": ""
+      },
+      "Plugins is of type PluginArray": {
+        "result": "failed",
+        "status": ""
+      },
+      "Languages\n(Old)": {
+        "result": "pt-BR",
+        "status": ""
+      },
+      "WebGL Vendor": {
+        "result": "Google Inc. (Google)",
+        "status": ""
+      },
+      "WebGL Renderer": {
+        "result": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "status": ""
+      },
+      "Broken Image Dimensions": {
+        "result": "16x16",
+        "status": ""
+      },
+      "navigator.cookieEnabled": {
+        "result": "true",
+        "status": ""
+      },
+      "navigator.doNotTrack": {
+        "result": "null",
+        "status": ""
+      },
+      "navigator.msDoNotTrack": {
+        "result": "undefined",
+        "status": ""
+      },
+      "navigator.sendBeacon": {
+        "result": "",
+        "status": ""
+      },
+      "navigator.userAgent": {
+        "result": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.7390.37 Safari/537.36",
+        "status": ""
+      },
+      "navigator.appName": {
+        "result": "Netscape",
+        "status": ""
+      },
+      "navigator.vendor": {
+        "result": "Google Inc.",
+        "status": ""
+      },
+      "navigator.appCodeName": {
+        "result": "Mozilla",
+        "status": ""
+      },
+      "navigator.getUserMedia": {
+        "result": "",
+        "status": ""
+      },
+      "navigator.sayswho": {
+        "result": "undefined",
+        "status": ""
+      },
+      "navigator.javaEnabled": {
+        "result": "false",
+        "status": ""
+      },
+      "navigator.plugins": {
+        "result": "{}",
+        "status": ""
+      },
+      "screen.width": {
+        "result": "1280",
+        "status": ""
+      },
+      "screen.height": {
+        "result": "720",
+        "status": ""
+      },
+      "screen.colorDepth": {
+        "result": "24",
+        "status": ""
+      },
+      "navigator.language": {
+        "result": "pt-BR",
+        "status": ""
+      },
+      "navigator.loadPurpose": {
+        "result": "undefined",
+        "status": ""
+      },
+      "navigator.platform": {
+        "result": "Win32",
+        "status": ""
+      },
+      "navigator.mediaDevices": {
+        "result": "audioinput: id =\nvideoinput: id =\naudiooutput: id =",
+        "status": ""
+      },
+      "navigator.getBattery details": {
+        "result": "Charging: true\nLevel: 1",
+        "status": ""
+      },
+      "Canvas1": {
+        "result": "Hash: 794253020",
+        "status": ""
+      },
+      "Canvas2": {
+        "result": "Hash: 794253020",
+        "status": ""
+      },
+      "Canvas3 (iframe sandbox)": {
+        "result": "Hash: 794253020",
+        "status": ""
+      },
+      "Canvas4 (iframe sandbox)": {
+        "result": "Hash: 794253020",
+        "status": ""
+      },
+      "Canvas5 (iframe)": {
+        "result": "Hash: 794253020",
+        "status": ""
+      }
+    },
+    "failed_tests": [],
+    "detection_count": 0,
+    "screenshot": "C:\\Users\\Fabiojr\\Documents\\git\\senatran\\fingerprint_test_results\\bot_sannysoft_screenshot.png"
+  },
+  "pixelscan": {
+    "tool": "pixelscan",
+    "url": "https://pixelscan.net/",
+    "timestamp": "2025-12-05T10:29:32.200004",
+    "detection_terms_found": [
+      "bot",
+      "automation",
+      "risk"
+    ],
+    "scores": [],
+    "issues": [],
+    "screenshot": "C:\\Users\\Fabiojr\\Documents\\git\\senatran\\fingerprint_test_results\\pixelscan_screenshot.png"
+  },
+  "deviceinfo": {
+    "tool": "deviceinfo",
+    "url": "https://www.deviceinfo.me/",
+    "timestamp": "2025-12-05T10:30:14.225529",
+    "info_sections": {},
+    "automation_indicators": [
+      "headless"
+    ],
+    "screenshot": "C:\\Users\\Fabiojr\\Documents\\git\\senatran\\fingerprint_test_results\\deviceinfo_screenshot.png"
+  }
+}

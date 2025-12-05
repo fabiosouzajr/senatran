@@ -49,6 +49,10 @@ async def create_persistent_context(playwright) -> BrowserContext:
         permissions=["geolocation", "notifications"],
         # Accept downloads automatically
         accept_downloads=True,
+        # Set locale to Portuguese (Brazil) for more human-like behavior
+        locale="pt-BR",
+        # Set timezone (Brazil timezone)
+        timezone_id="America/Sao_Paulo",
     )
     
     return context
