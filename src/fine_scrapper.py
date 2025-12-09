@@ -263,6 +263,18 @@ async def process_all_vehicle_pages(page: Page) -> None:
             logger.info("No more pages to process")
             break
         
+        # Check for CAPTCHA errors BEFORE navigation
+        logger.info("Checking for CAPTCHA errors before navigation...")
+        error_before = await check_for_rate_limit_error(page)
+        if error_before and "captcha" in error_before.lower():
+            logger.warning(f"CAPTCHA error detected before navigation: {error_before}")
+            error_handled = await check_and_handle_captcha_error(page, "before pagination navigation")
+            if not error_handled:
+                logger.error("CAPTCHA error detected and could not be resolved. Stopping pagination.")
+                break
+            # Wait a bit more after handling error
+            await asyncio.sleep(2.0)
+        
         # Navigate to next page
         logger.info("Navigating to next page...")
         
@@ -279,7 +291,7 @@ async def process_all_vehicle_pages(page: Page) -> None:
         # Check for CAPTCHA errors after navigation
         error_handled = await check_and_handle_captcha_error(page, "pagination navigation")
         if not error_handled:
-            logger.error("CAPTCHA error detected and could not be resolved. Stopping pagination.")
+            logger.error("CAPTCHA error detected after navigation and could not be resolved. Stopping pagination.")
             break
         
         # Simulate reading the new page

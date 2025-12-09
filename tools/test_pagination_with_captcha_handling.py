@@ -111,10 +111,36 @@ async def test_pagination_with_captcha_handling():
                 logger.info("Next page available. Preparing to navigate...")
                 
                 # Check for any existing errors before navigation
+                logger.info("Checking for CAPTCHA errors before navigation...")
                 error_before = await check_for_rate_limit_error(page)
-                if error_before:
-                    logger.warning(f"Error detected before navigation: {error_before}")
+                
+                if error_before and "captcha" in error_before.lower():
                     captcha_errors_detected += 1
+                    logger.warning(f"⚠️  CAPTCHA error detected before navigation: {error_before}")
+                    
+                    # Test the error handling function
+                    logger.info("Attempting to handle CAPTCHA error before navigation...")
+                    error_handled = await check_and_handle_captcha_error(page, f"before pagination to page {page_number + 1}")
+                    
+                    if error_handled:
+                        captcha_errors_handled += 1
+                        logger.info("✅ CAPTCHA error was handled successfully before navigation")
+                        
+                        # Verify error is gone
+                        error_after_handling = await check_for_rate_limit_error(page)
+                        if error_after_handling and "captcha" in error_after_handling.lower():
+                            logger.warning(f"⚠️  Error still present after handling: {error_after_handling}")
+                        else:
+                            logger.info("✅ Error cleared after handling")
+                        
+                        # Wait a bit more after handling error
+                        await asyncio.sleep(2.0)
+                    else:
+                        logger.error("❌ Failed to handle CAPTCHA error before navigation")
+                        logger.error("Stopping pagination due to unresolved CAPTCHA error")
+                        break
+                else:
+                    logger.info("✅ No CAPTCHA errors detected before navigation")
                 
                 # Navigate to next page with longer delay (as per implementation)
                 logger.info("Waiting before navigation (2-4 seconds to reduce CAPTCHA triggers)...")
@@ -130,26 +156,26 @@ async def test_pagination_with_captcha_handling():
                 logger.info("\nChecking for CAPTCHA errors after navigation...")
                 error_after = await check_for_rate_limit_error(page)
                 
-                if error_after:
+                if error_after and "captcha" in error_after.lower():
                     captcha_errors_detected += 1
-                    logger.warning(f"CAPTCHA error detected after navigation: {error_after}")
+                    logger.warning(f"⚠️  CAPTCHA error detected after navigation: {error_after}")
                     
                     # Test the error handling function
-                    logger.info("Attempting to handle CAPTCHA error...")
+                    logger.info("Attempting to handle CAPTCHA error after navigation...")
                     error_handled = await check_and_handle_captcha_error(page, f"pagination to page {page_number + 1}")
                     
                     if error_handled:
                         captcha_errors_handled += 1
-                        logger.info("✅ CAPTCHA error was handled successfully")
+                        logger.info("✅ CAPTCHA error was handled successfully after navigation")
                         
                         # Verify error is gone
                         error_after_handling = await check_for_rate_limit_error(page)
-                        if error_after_handling:
+                        if error_after_handling and "captcha" in error_after_handling.lower():
                             logger.warning(f"⚠️  Error still present after handling: {error_after_handling}")
                         else:
                             logger.info("✅ Error cleared after handling")
                     else:
-                        logger.error("❌ Failed to handle CAPTCHA error")
+                        logger.error("❌ Failed to handle CAPTCHA error after navigation")
                         logger.error("Stopping pagination due to unresolved CAPTCHA error")
                         break
                 else:
