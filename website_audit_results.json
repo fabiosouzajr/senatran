@@ -1,0 +1,393 @@
+{
+  "url": "https://portalservicos.senatran.serpro.gov.br/#/home",
+  "audit_date": "2025-12-09T11:00:37.353259",
+  "frameworks": {
+    "angular": true,
+    "angular_version": "unknown"
+  },
+  "security": {
+    "headers": {
+      "content_security_policy": null,
+      "strict_transport_security": "max-age=15768000",
+      "x_frame_options": null,
+      "x_content_type_options": null,
+      "x_xss_protection": null,
+      "referrer_policy": null,
+      "permissions_policy": null,
+      "cross_origin_embedder_policy": null,
+      "cross_origin_opener_policy": null,
+      "cross_origin_resource_policy": null
+    },
+    "analysis": {
+      "csp_present": false,
+      "hsts_present": true,
+      "frame_protection": false,
+      "mime_sniffing_protection": false,
+      "xss_protection": false
+    }
+  },
+  "cookies": {
+    "total_cookies": 2,
+    "http_only": 2,
+    "secure": 2,
+    "same_site": {
+      "strict": 0,
+      "lax": 0,
+      "none": 2,
+      "unspecified": 0
+    },
+    "session_cookies": 0,
+    "persistent_cookies": 2,
+    "cookies_by_domain": {
+      ".hcaptcha.com": 1,
+      ".w.hcaptcha.com": 1
+    },
+    "cookie_names": [
+      "__cf_bm",
+      "__cf_bm"
+    ]
+  },
+  "cache": {
+    "cache_control_present": 26,
+    "etag_present": 24,
+    "last_modified_present": 21,
+    "cache_policies": [
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/assets/fonts/portal/styles.css",
+        "cache_control": "max-age=31536000, public, max-age=31536000"
+      },
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/assets/fonts/sne/css/sne-icons.css",
+        "cache_control": "max-age=31536000, public, max-age=31536000"
+      },
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/styles.09d70d377c460f2fb0ba.css",
+        "cache_control": "max-age=31536000, public, max-age=31536000"
+      },
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/assets/js/ImageSize.js",
+        "cache_control": "max-age=31536000, public, max-age=31536000"
+      },
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/runtime-es2015.f00ddbbd4a6c51e569f7.js",
+        "cache_control": "max-age=31536000, public, max-age=31536000"
+      },
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/polyfills-es2015.9ba952a0c6baeb75eab0.js",
+        "cache_control": "max-age=31536000, public, max-age=31536000"
+      },
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/scripts.09171577a9f36ccaf9fe.js",
+        "cache_control": "max-age=31536000, public, max-age=31536000"
+      },
+      {
+        "url": "https://cdngovbr-ds.estaleiro.serpro.gov.br/design-system/fonts/rawline/font/rawline-400.woff2",
+        "cache_control": "max-age=31536000, max-age=10800"
+      },
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/main-es2015.27bb3ae484a4022c35a4.js",
+        "cache_control": "max-age=31536000, public, max-age=31536000"
+      },
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/portalservicos-ws/campanha/vigentes/ambito/2",
+        "cache_control": "no-cache, no-store, max-age=0, must-revalidate"
+      },
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/portalservicos-ws/funcionalidade/home",
+        "cache_control": "no-cache, no-store, max-age=0, must-revalidate"
+      },
+      {
+        "url": "https://cdngovbr-ds.estaleiro.serpro.gov.br/design-system/fonts/rawline/font/rawline-600.woff2",
+        "cache_control": "max-age=31536000, max-age=10800"
+      },
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/fa-solid-900.1551f4f60c37af51121f.woff2",
+        "cache_control": "max-age=31536000, public, max-age=31536000"
+      },
+      {
+        "url": "https://cdngovbr-ds.estaleiro.serpro.gov.br/design-system/fonts/rawline/font/rawline-700.woff2",
+        "cache_control": "max-age=31536000, max-age=10800"
+      },
+      {
+        "url": "https://cdngovbr-ds.estaleiro.serpro.gov.br/design-system/fonts/rawline/font/rawline-400i.woff2",
+        "cache_control": "max-age=31536000, max-age=10800"
+      },
+      {
+        "url": "https://portalservicos.senatran.serpro.gov.br/fa-regular-400.7a3337626410ca2f4071.woff2",
+        "cache_control": "max-age=31536000, public, max-age=31536000"
+      },
+      {
+        "url": "https://cdngovbr-ds.estaleiro.serpro.gov.br/design-system/fonts/rawline/font/rawline-500.woff2",
+        "cache_control": "max-age=31536000, max-age=10800"
+      },
+      {
+        "url": "https://js.hcaptcha.com/1/api.js?siteKey=86605651-413f-4902-9ff1-c5bb8d55b98c&render=explicit&recaptchacompat=on&hl=pt-BR&onload=onCaptchaScriptLoaded",
+        "cache_control": "max-age=300"
+      },
+      {
+        "url": "https://barra.brasil.gov.br/barra_2.0.js",
+        "cache_control": "max-age=604800, public"
+      },
+      {
+        "url": "https://vlibras.gov.br/app2/vlibras-plugin.js",
+        "cache_control": "public, max-age=31536000, immutable, stale-while-revalidate=86400"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/gh/spbgovbr-vlibras/vlibras-portal@dev/app2/vlibras-plugin.js",
+        "cache_control": "public, max-age=604800, s-maxage=43200"
+      },
+      {
+        "url": "https://newassets.hcaptcha.com/captcha/v1/2e2f9feae51e15dd4676ba8e3d761ec72f41b826/static/i18n/pt-BR.json",
+        "cache_control": "public, max-age=3600"
+      },
+      {
+        "url": "https://newassets.hcaptcha.com/captcha/v1/2e2f9feae51e15dd4676ba8e3d761ec72f41b826/static/hcaptcha.html",
+        "cache_control": "max-age=3600"
+      },
+      {
+        "url": "https://newassets.hcaptcha.com/captcha/v1/2e2f9feae51e15dd4676ba8e3d761ec72f41b826/static/hcaptcha.html",
+        "cache_control": "max-age=3600"
+      },
+      {
+        "url": "https://aaec926a6d30.w.hcaptcha.com/logo.png",
+        "cache_control": "public, max-age=86400"
+      },
+      {
+        "url": "https://newassets.hcaptcha.com/c/6cd6b0c8c8834b61b6a2a5440ead57f4f9fa11280a797814908db38cbd43b681/hsw.js",
+        "cache_control": "max-age=3024000"
+      }
+    ],
+    "no_cache_resources": 2,
+    "max_age_values": [
+      31536000,
+      31536000,
+      31536000,
+      31536000,
+      31536000,
+      31536000,
+      31536000,
+      31536000,
+      31536000,
+      0,
+      0,
+      31536000,
+      31536000,
+      31536000,
+      31536000,
+      31536000,
+      31536000,
+      300,
+      604800,
+      31536000,
+      604800,
+      3600,
+      3600,
+      3600,
+      86400,
+      3024000
+    ]
+  },
+  "architecture": {
+    "meta_tags": {
+      "viewport": "width=device-width, initial-scale=1",
+      "description": "Portal de Serviços Senatran (antigo Denatran), disponibiliza diversos serviços para o cidadão para consulta de CNH (Carteina Nacional de Habilitação), CRLV (Certificado de Registro e Licenciamento do Veículo) , veículo, infrações e muito mais."
+    },
+    "custom_elements": [
+      "br-label",
+      "br-header",
+      "br-input",
+      "app-root",
+      "app-landing",
+      "br-alert-messages",
+      "app-campanha-vigente",
+      "br-main-layout",
+      "br-fieldset",
+      "ngx-spinner",
+      "router-outlet",
+      "br-breadcrumbs"
+    ],
+    "spa": true,
+    "routing": "hash-based",
+    "cdn_domains": [
+      "cdn.jsdelivr.net",
+      "cdngovbr-ds.estaleiro.serpro.gov.br"
+    ],
+    "api_count": 9,
+    "resource_types": {
+      "document": 3,
+      "stylesheet": 4,
+      "script": 12,
+      "font": 8,
+      "fetch": 3,
+      "xhr": 4
+    },
+    "external_domains": [
+      "newassets.hcaptcha.com",
+      "",
+      "js.hcaptcha.com",
+      "aaec926a6d30.w.hcaptcha.com",
+      "cdn.jsdelivr.net",
+      "vlibras.gov.br",
+      "portalservicos.senatran.serpro.gov.br",
+      "api.hcaptcha.com",
+      "cdngovbr-ds.estaleiro.serpro.gov.br",
+      "barra.brasil.gov.br"
+    ],
+    "cdn_detected": true
+  },
+  "api_endpoints": [
+    {
+      "url": "https://portalservicos.senatran.serpro.gov.br/assets/cookiebar/dados/arquivoconfiguracao.json",
+      "method": "GET",
+      "resource_type": "fetch",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "referer": "https://portalservicos.senatran.serpro.gov.br/",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Chromium\";v=\"141\", \"Not?A_Brand\";v=\"8\"",
+        "accept-language": "pt-BR",
+        "sec-ch-ua-mobile": "?0"
+      }
+    },
+    {
+      "url": "https://portalservicos.senatran.serpro.gov.br/assets/cookiebar/dados/arquivocompleto.json",
+      "method": "GET",
+      "resource_type": "fetch",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "referer": "https://portalservicos.senatran.serpro.gov.br/",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Chromium\";v=\"141\", \"Not?A_Brand\";v=\"8\"",
+        "accept-language": "pt-BR",
+        "sec-ch-ua-mobile": "?0"
+      }
+    },
+    {
+      "url": "https://portalservicos.senatran.serpro.gov.br/portalservicos-ws/funcionalidade/home",
+      "method": "GET",
+      "resource_type": "xhr",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "referer": "https://portalservicos.senatran.serpro.gov.br/",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "accept": "application/json, text/plain, */*",
+        "sec-ch-ua": "\"Chromium\";v=\"141\", \"Not?A_Brand\";v=\"8\"",
+        "accept-language": "pt-BR",
+        "sec-ch-ua-mobile": "?0"
+      }
+    },
+    {
+      "url": "https://portalservicos.senatran.serpro.gov.br/portalservicos-ws/campanha/vigentes/ambito/2",
+      "method": "GET",
+      "resource_type": "xhr",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "referer": "https://portalservicos.senatran.serpro.gov.br/",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "accept": "application/json, text/plain, */*",
+        "sec-ch-ua": "\"Chromium\";v=\"141\", \"Not?A_Brand\";v=\"8\"",
+        "accept-language": "pt-BR",
+        "sec-ch-ua-mobile": "?0"
+      }
+    },
+    {
+      "url": "https://newassets.hcaptcha.com/captcha/v1/2e2f9feae51e15dd4676ba8e3d761ec72f41b826/static/i18n/pt-BR.json",
+      "method": "GET",
+      "resource_type": "xhr",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "referer": "https://portalservicos.senatran.serpro.gov.br/",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Chromium\";v=\"141\", \"Not?A_Brand\";v=\"8\"",
+        "accept-language": "pt-BR",
+        "sec-ch-ua-mobile": "?0"
+      }
+    },
+    {
+      "url": "https://newassets.hcaptcha.com/captcha/v1/2e2f9feae51e15dd4676ba8e3d761ec72f41b826/static/hcaptcha.html",
+      "method": "GET",
+      "resource_type": "document",
+      "headers": {
+        "accept-language": "pt-BR",
+        "referer": "https://portalservicos.senatran.serpro.gov.br/",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Chromium\";v=\"141\", \"Not?A_Brand\";v=\"8\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\""
+      }
+    },
+    {
+      "url": "https://newassets.hcaptcha.com/captcha/v1/2e2f9feae51e15dd4676ba8e3d761ec72f41b826/static/hcaptcha.html",
+      "method": "GET",
+      "resource_type": "document",
+      "headers": {
+        "accept-language": "pt-BR",
+        "referer": "https://portalservicos.senatran.serpro.gov.br/",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Chromium\";v=\"141\", \"Not?A_Brand\";v=\"8\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\""
+      }
+    },
+    {
+      "url": "https://aaec926a6d30.w.hcaptcha.com/logo.png",
+      "method": "GET",
+      "resource_type": "fetch",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "referer": "https://newassets.hcaptcha.com/",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Chromium\";v=\"141\", \"Not?A_Brand\";v=\"8\"",
+        "accept-language": "pt-BR",
+        "sec-ch-ua-mobile": "?0"
+      }
+    },
+    {
+      "url": "https://api.hcaptcha.com/checksiteconfig?v=2e2f9feae51e15dd4676ba8e3d761ec72f41b826&host=portalservicos.senatran.serpro.gov.br&sitekey=86605651-413f-4902-9ff1-c5bb8d55b98c&sc=1&swa=1&spst=1",
+      "method": "POST",
+      "resource_type": "xhr",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "referer": "https://newassets.hcaptcha.com/",
+        "accept-language": "pt-BR",
+        "sec-ch-ua": "\"Chromium\";v=\"141\", \"Not?A_Brand\";v=\"8\"",
+        "sec-ch-ua-mobile": "?0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "accept": "application/json",
+        "content-type": "text/plain"
+      }
+    }
+  ],
+  "resources": [],
+  "headers": {
+    "transfer-encoding": "chunked",
+    "content-encoding": "gzip",
+    "content-type": "text/html",
+    "date": "Tue, 09 Dec 2025 14:00:39 GMT",
+    "etag": "W/\"6928d1e6-1b09\"",
+    "last-modified": "Thu, 27 Nov 2025 22:34:14 GMT",
+    "strict-transport-security": "max-age=15768000"
+  },
+  "javascript": {
+    "total_scripts": 12,
+    "inline_scripts": 1,
+    "external_scripts": 11,
+    "frameworks_detected": [
+      "jquery"
+    ],
+    "libraries_detected": []
+  },
+  "performance": {},
+  "recommendations": [
+    "⚠️  CSP header not present - consider adding Content-Security-Policy",
+    "⚠️  X-Frame-Options not present - consider adding to prevent clickjacking",
+    "✅ SPA detected - use hash-based or history-based routing for navigation",
+    "⚠️  SPA requires waiting for JavaScript to render content - use wait_for_selector or networkidle",
+    "✅ Angular framework detected - look for custom elements like <app-*> for selectors",
+    "⚠️  Angular uses zone.js for change detection - wait for Angular to stabilize before interactions",
+    "✅ 2 cookie(s) detected - ensure persistent context is used to maintain session"
+  ],
+  "status_code": 200
+}
