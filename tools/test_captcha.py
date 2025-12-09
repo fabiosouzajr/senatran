@@ -24,9 +24,9 @@ except ImportError:
     sys.exit(1)
 
 try:
-    import config
-    from captcha_solver import detect_and_solve_captcha, CaptchaSolver
-    from main import create_persistent_context
+    import src.config as config
+    from src.captcha_solver import detect_and_solve_captcha, CaptchaSolver
+    from src.main import create_persistent_context
 except ImportError as e:
     print(f"ERROR: Failed to import modules: {e}")
     print("Make sure you're in the project directory and virtual environment is activated")

@@ -1,0 +1,77 @@
+{
+  "total_elements": 2,
+  "expected_vehicles": 9,
+  "elements": [
+    {
+      "index": 0,
+      "tag": "DIV",
+      "class": "card-list-item mini ng-star-inserted",
+      "id": "",
+      "text_preview": "HONDA/CG 160 TITAN\nPOI3E66\n01198814044",
+      "text_length": 38,
+      "html_preview": "<div _ngcontent-fiy-c162=\"\" class=\"row\"><div _ngcontent-fiy-c162=\"\" class=\"col-md-12\"><div _ngcontent-fiy-c162=\"\" class=\"text\"><span _ngcontent-fiy-c162=\"\" class=\"title text-uppercase\">HONDA/CG 160 TI",
+      "parent": {
+        "tag": "DIV",
+        "class": "row",
+        "id": "",
+        "childrenCount": 9
+      },
+      "sibling": {
+        "index": 0,
+        "siblingsCount": 9
+      },
+      "has_license_plate": false,
+      "has_vehicle_info": false,
+      "has_click_handler": true,
+      "computed_styles": {
+        "cursor": "pointer",
+        "display": "block",
+        "position": "static",
+        "zIndex": "auto"
+      }
+    },
+    {
+      "index": 1,
+      "tag": "DIV",
+      "class": "col-lg-10 col-md-12",
+      "id": "",
+      "text_preview": "Exibir:\n9\n1-9 de 11 itens\nPágina\n1",
+      "text_length": 34,
+      "html_preview": "<br-pagination-table _ngcontent-fiy-c162=\"\" _nghost-fiy-c140=\"\" class=\"ng-star-inserted\"><div _ngcontent-fiy-c140=\"\" class=\"pagination-container\"><span _ngcontent-fiy-c140=\"\">Exibir:</span><br-select ",
+      "parent": {
+        "tag": "DIV",
+        "class": "row",
+        "id": "",
+        "childrenCount": 1
+      },
+      "sibling": {
+        "index": 0,
+        "siblingsCount": 1
+      },
+      "has_license_plate": false,
+      "has_vehicle_info": false,
+      "has_click_handler": false,
+      "computed_styles": {
+        "cursor": "auto",
+        "display": "block",
+        "position": "relative",
+        "zIndex": "auto"
+      }
+    }
+  ],
+  "patterns": {
+    "class_frequency": {
+      "card-list-item": 1,
+      "mini": 1,
+      "ng-star-inserted": 1,
+      "col-lg-10": 1,
+      "col-md-12": 1
+    },
+    "parent_structures": {
+      "DIV.row": 2
+    },
+    "elements_with_vehicle_info": 0,
+    "elements_with_click_handler": 1,
+    "elements_with_text": 2
+  }
+}

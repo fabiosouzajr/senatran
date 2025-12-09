@@ -45,6 +45,7 @@ RECOMMENDATION:
 import asyncio
 import logging
 import random
+import re
 import sys
 from typing import List
 from playwright.async_api import Page, TimeoutError as PlaywrightTimeoutError
@@ -52,6 +53,7 @@ from playwright.async_api import Page, TimeoutError as PlaywrightTimeoutError
 import config
 import human_behavior
 from captcha_solver import detect_and_solve_captcha
+from rate_limit_handler import check_for_rate_limit_error
 
 # Configure logging
 logging.basicConfig(
@@ -83,6 +85,75 @@ async def wait_for_page_ready(page: Page, timeout: int = None) -> None:
         # If load state times out, just give SPA time to render
         logger.debug("Load state timeout, giving page time to render...")
         await asyncio.sleep(1.5)  # Give SPA time to initialize
+
+
+async def check_and_handle_captcha_error(page: Page, operation_name: str = "operation") -> bool:
+    """
+    Check for CAPTCHA error messages and handle them appropriately.
+    
+    Args:
+        page: Playwright Page object
+        operation_name: Name of the operation that triggered the check (for logging)
+    
+    Returns:
+        True if no error or error was handled, False if error persists
+    """
+    try:
+        # Wait a moment for error messages to appear
+        await asyncio.sleep(1.0)
+        
+        # Check for CAPTCHA error messages
+        error_text = await check_for_rate_limit_error(page)
+        
+        if error_text and "captcha" in error_text.lower():
+            logger.warning(f"CAPTCHA error detected after {operation_name}: {error_text}")
+            
+            # Check if there's actually a visible CAPTCHA widget
+            captcha_widgets = await page.locator("iframe[src*='hcaptcha'], iframe[src*='recaptcha'], div[id*='hcaptcha'], div[class*='hcaptcha']").count()
+            
+            if captcha_widgets > 0:
+                logger.info("Visible CAPTCHA widget detected, attempting to solve...")
+                if config.ENABLE_CAPTCHA_SOLVING:
+                    captcha_solved = await detect_and_solve_captcha(page)
+                    if captcha_solved:
+                        logger.info("CAPTCHA solved successfully")
+                        await asyncio.sleep(2.0)
+                        return True
+                    else:
+                        logger.warning("Failed to solve CAPTCHA")
+                        return False
+            else:
+                # No visible CAPTCHA widget - this is an API-level error
+                logger.warning("CAPTCHA error message but no visible widget - likely API-level rate limiting")
+                logger.info("Waiting longer before retrying...")
+                # Wait longer (2-5 seconds as per audit recommendations)
+                wait_time = random.uniform(2.0, 5.0)
+                logger.info(f"Waiting {wait_time:.1f} seconds before retrying...")
+                await asyncio.sleep(wait_time)
+                
+                # Try to refresh or navigate back
+                try:
+                    await page.reload(wait_until="domcontentloaded", timeout=10000)
+                    await asyncio.sleep(2.0)
+                    logger.info("Page refreshed, checking for error again...")
+                    
+                    # Check again after refresh
+                    error_text_after = await check_for_rate_limit_error(page)
+                    if error_text_after and "captcha" in error_text_after.lower():
+                        logger.error("CAPTCHA error persists after refresh")
+                        return False
+                    else:
+                        logger.info("Error cleared after refresh")
+                        return True
+                except Exception as e:
+                    logger.warning(f"Error refreshing page: {e}")
+                    return False
+        
+        return True
+        
+    except Exception as e:
+        logger.warning(f"Error checking for CAPTCHA error: {e}")
+        return True  # Assume no error if check fails
 
 
 async def getfines(page: Page) -> None:
@@ -195,14 +266,21 @@ async def process_all_vehicle_pages(page: Page) -> None:
         # Navigate to next page
         logger.info("Navigating to next page...")
         
-        # Random delay before navigating to next page
-        await human_behavior.random_delay(500, 1500)
+        # Longer delay before navigating to next page to avoid CAPTCHA triggers
+        # (as per audit Section 7.3 - rapid navigation can trigger CAPTCHA)
+        await human_behavior.random_delay(2000, 4000)  # 2-4 seconds
         
         await navigate_to_next_page(page)
         page_number += 1
         
         # Wait for the new page to load (lenient approach for SPAs)
         await wait_for_page_ready(page)
+        
+        # Check for CAPTCHA errors after navigation
+        error_handled = await check_and_handle_captcha_error(page, "pagination navigation")
+        if not error_handled:
+            logger.error("CAPTCHA error detected and could not be resolved. Stopping pagination.")
+            break
         
         # Simulate reading the new page
         await human_behavior.simulate_reading(page, 1.0, 2.0)
@@ -211,6 +289,8 @@ async def process_all_vehicle_pages(page: Page) -> None:
 async def get_vehicle_items(page: Page) -> List:
     """
     Get all vehicle items from the current page's vehicle list.
+    
+    Based on DOM analysis, vehicle items have class 'card-list-item' and are clickable.
     
     Args:
         page: Playwright Page object
@@ -226,6 +306,18 @@ async def get_vehicle_items(page: Page) -> List:
             state="visible"
         )
         
+        # Wait for Angular to stabilize (as per audit Section 8.1)
+        # Wait for network idle or at least for API calls to complete
+        try:
+            await page.wait_for_load_state("networkidle", timeout=10000)
+        except Exception:
+            # If networkidle times out, give Angular time to render
+            logger.debug("Network idle timeout, giving Angular time to stabilize...")
+            await asyncio.sleep(1.5)
+        
+        # Additional wait for Angular change detection to complete
+        await asyncio.sleep(1.5)
+        
         # Wait for dynamic content to load with human-like delay
         await human_behavior.simulate_reading(page, 1.0, 2.0)
         
@@ -233,57 +325,107 @@ async def get_vehicle_items(page: Page) -> List:
         if random.random() < 0.6:  # 60% chance to scroll
             await human_behavior.random_scroll(page, 1, 2)
         
-        # Use XPath based on the provided structure
-        # XPath for first vehicle: /html/body/.../app-infracao-veiculo-lista/form/div[3]/div[2]/div[1]/div[1]
-        # Pattern: form/div[3]/div[2]/div[*]/div[1] - vehicles are in nested divs
-        # Each vehicle is at: form/div[3]/div[2]/div[N]/div[1] where N is the vehicle index
+        # Primary selector: Use class-based selector (more reliable than XPath with indices)
+        # Based on DOM analysis, vehicle items have class 'card-list-item'
+        vehicle_list_locator = page.locator("app-infracao-veiculo-lista")
         
-        # Use XPath to find all vehicle items
-        # XPath: //app-infracao-veiculo-lista/form/div[3]/div[2]/div/div[1]
-        # This finds all div[1] elements that are children of div elements under form/div[3]/div[2]
+        # Try class-based selector first (most reliable)
+        primary_selector = "div.card-list-item"
+        items_locator = vehicle_list_locator.locator(primary_selector)
+        count = await items_locator.count()
+        logger.info(f"Class-based selector '{primary_selector}' found {count} elements")
+        
+        # Validate and filter vehicle items
+        vehicle_items = []
+        for i in range(count):
+            try:
+                element = items_locator.nth(i)
+                
+                # Validate that this is actually a vehicle item
+                # Check for clickability (vehicle items are clickable)
+                is_clickable = await element.evaluate("""
+                    el => {
+                        const styles = window.getComputedStyle(el);
+                        return styles.cursor === 'pointer' || 
+                               el.onclick !== null || 
+                               el.getAttribute('onclick') !== null;
+                    }
+                """)
+                
+                # Check for vehicle content (should have some text)
+                text_content = await element.inner_text()
+                has_content = len(text_content.strip()) > 10
+                
+                # Filter out pagination and other non-vehicle elements
+                # Pagination typically has text like "Exibir:", "Página", etc.
+                is_pagination = any(keyword in text_content.lower() for keyword in 
+                                  ['exibir', 'página', 'página', 'itens', 'próximo', 'anterior'])
+                
+                if is_clickable and has_content and not is_pagination:
+                    vehicle_items.append(element)
+                    logger.debug(f"Validated vehicle item {len(vehicle_items)}: clickable={is_clickable}, has_content={has_content}")
+                else:
+                    logger.debug(f"Filtered out element {i}: clickable={is_clickable}, has_content={has_content}, is_pagination={is_pagination}")
+                    
+            except Exception as e:
+                logger.warning(f"Error validating element {i}: {e}")
+                continue
+        
+        if len(vehicle_items) > 0:
+            logger.info(f"Found {len(vehicle_items)} validated vehicle items using class-based selector")
+            return vehicle_items
+        
+        # Fallback: Try XPath selector if class-based selector didn't work
+        logger.warning("Class-based selector didn't find valid vehicles, trying XPath fallback...")
         xpath_selector = "xpath=//app-infracao-veiculo-lista/form/div[3]/div[2]/div/div[1]"
         
         try:
-            # Use XPath locator to find all vehicles
             items_locator = page.locator(xpath_selector)
             count = await items_locator.count()
-            logger.info(f"XPath selector found {count} vehicle items")
+            logger.info(f"XPath selector found {count} elements")
             
-            if count >= 9:
-                # Create list of locators using nth()
-                vehicle_items = [items_locator.nth(i) for i in range(count)]
-                logger.info(f"Successfully found {len(vehicle_items)} vehicle items using XPath")
+            # Validate XPath results
+            for i in range(count):
+                try:
+                    element = items_locator.nth(i)
+                    class_name = await element.get_attribute("class") or ""
+                    
+                    # Only include elements with card-list-item class
+                    if "card-list-item" in class_name:
+                        vehicle_items.append(element)
+                except Exception as e:
+                    logger.warning(f"Error processing XPath element {i}: {e}")
+                    continue
+            
+            if len(vehicle_items) > 0:
+                logger.info(f"Found {len(vehicle_items)} vehicle items using XPath fallback")
                 return vehicle_items
-            else:
-                logger.warning(f"XPath found only {count} items, expected 9. Trying alternative approach...")
+                
         except Exception as e:
-            logger.warning(f"XPath selector failed: {e}. Trying alternative approach...")
+            logger.warning(f"XPath selector failed: {e}")
         
-        # Fallback: Use CSS selector with the structure pattern
-        vehicle_list_locator = page.locator("app-infracao-veiculo-lista")
+        # Final fallback: Try CSS selector with structure pattern
+        logger.warning("Trying CSS structure-based fallback...")
         items_locator = vehicle_list_locator.locator("form > div:nth-child(3) > div:nth-child(2) > div > div:first-child")
-        
         count = await items_locator.count()
         logger.debug(f"CSS selector found {count} items")
         
-        if count < 9:
-            # Try alternative CSS selectors based on the structure
-            alternative_selectors = [
-                "form div:nth-child(3) div:nth-child(2) > div > div:first-child",
-                "form > div:nth-of-type(3) > div:nth-of-type(2) > div > div:first-child",
-            ]
-            
-            for selector in alternative_selectors:
-                test_locator = vehicle_list_locator.locator(selector)
-                test_count = await test_locator.count()
-                logger.debug(f"Alternative selector '{selector}' found {test_count} items")
-                if test_count >= 9:
-                    items_locator = test_locator
-                    count = test_count
-                    break
-        
-        # Create list of locators using nth()
-        vehicle_items = [items_locator.nth(i) for i in range(count)]
+        # Validate CSS results
+        for i in range(count):
+            try:
+                element = items_locator.nth(i)
+                class_name = await element.get_attribute("class") or ""
+                is_clickable = await element.evaluate("""
+                    el => {
+                        const styles = window.getComputedStyle(el);
+                        return styles.cursor === 'pointer';
+                    }
+                """)
+                
+                if "card-list-item" in class_name and is_clickable:
+                    vehicle_items.append(element)
+            except Exception:
+                continue
         
         if not vehicle_items:
             logger.warning("No vehicle items found. The page structure may be different than expected.")
@@ -322,9 +464,18 @@ async def process_vehicle(page: Page, vehicle_item, page_number: int, vehicle_in
         # Wait for navigation to complete (lenient approach for SPAs)
         await wait_for_page_ready(page)
         
-        # Check for and solve CAPTCHA if present
+        # Check for CAPTCHA errors after navigation (before checking for visible CAPTCHA)
+        error_handled = await check_and_handle_captcha_error(page, "vehicle navigation")
+        if not error_handled:
+            logger.warning("CAPTCHA error detected after vehicle click. Attempting to recover...")
+            # Try to go back and skip this vehicle
+            await go_back_to_vehicle_list(page)
+            await asyncio.sleep(2.0)
+            return
+        
+        # Check for and solve CAPTCHA if present (visible widget)
         if config.ENABLE_CAPTCHA_SOLVING:
-            logger.info("Checking for CAPTCHA on vehicle page...")
+            logger.info("Checking for visible CAPTCHA widget on vehicle page...")
             captcha_solved = await detect_and_solve_captcha(page)
             if captcha_solved:
                 logger.info("CAPTCHA solved successfully")
@@ -416,14 +567,51 @@ async def check_for_next_page(page: Page) -> bool:
     """
     Check if there's a next page in the pagination.
     
+    Uses multiple strategies:
+    1. Check for Brazil Design System pagination component (br-pagination-table)
+    2. Check pagination text (e.g., "1-9 de 11 itens" indicates more pages)
+    3. Check for next button in various formats
+    
     Args:
         page: Playwright Page object
-        
+    
     Returns:
         True if next page exists, False otherwise
     """
     try:
-        # Common pagination selectors
+        # Strategy 1: Check pagination text to see if there are more items
+        # Look for text like "1-9 de 11 itens" which indicates more pages exist
+        try:
+            pagination_text = await page.locator("br-pagination-table").inner_text()
+            if pagination_text:
+                # Extract numbers from text like "1-9 de 11 itens"
+                match = re.search(r'(\d+)-(\d+)\s+de\s+(\d+)', pagination_text)
+                if match:
+                    start = int(match.group(1))
+                    end = int(match.group(2))
+                    total = int(match.group(3))
+                    if end < total:
+                        logger.info(f"Pagination text indicates more pages: {end} of {total} items shown")
+                        return True
+        except Exception:
+            pass
+        
+        # Strategy 2: Check for Brazil Design System pagination next button
+        # The br-pagination-table component may have specific selectors
+        try:
+            # Look for next button in br-pagination-table
+            pagination_locator = page.locator("br-pagination-table")
+            next_button = pagination_locator.locator("button:has-text('Próximo'), button[aria-label*='próximo' i]")
+            if await next_button.count() > 0:
+                is_disabled = await next_button.get_attribute("disabled")
+                class_name = await next_button.get_attribute("class") or ""
+                if is_disabled is None and "disabled" not in class_name.lower():
+                    logger.info("Next page button found in br-pagination-table")
+                    return True
+        except Exception:
+            pass
+        
+        # Strategy 3: Common pagination selectors (fallback)
         next_selectors = [
             "button:has-text('Próximo')",
             "button:has-text('Next')",
@@ -433,6 +621,8 @@ async def check_for_next_page(page: Page) -> bool:
             "[aria-label*='next' i]",
             ".pagination .next:not(.disabled)",
             ".pagination button.next:not([disabled])",
+            "br-pagination-table button:has-text('Próximo')",
+            "br-pagination-table [aria-label*='próximo' i]",
         ]
         
         for selector in next_selectors:
@@ -445,7 +635,7 @@ async def check_for_next_page(page: Page) -> bool:
                         # Check for disabled class
                         class_name = await next_button.get_attribute("class") or ""
                         if "disabled" not in class_name.lower():
-                            logger.info("Next page button found and enabled")
+                            logger.info(f"Next page button found with selector: {selector}")
                             return True
             except Exception:
                 continue
@@ -462,12 +652,55 @@ async def navigate_to_next_page(page: Page) -> None:
     """
     Navigate to the next page of the vehicle list.
     
+    Tries multiple strategies to find and click the next page button,
+    prioritizing Brazil Design System pagination component.
+    
     Args:
         page: Playwright Page object
     """
     try:
-        # Try to find and click next button
+        # Strategy 1: Try Brazil Design System pagination component first
+        # The next button has ID 'btn-next-page' and class 'br-button circle'
+        try:
+            # Try by ID first (most reliable)
+            next_button_id = page.locator("#btn-next-page")
+            if await next_button_id.count() > 0:
+                is_disabled = await next_button_id.get_attribute("disabled")
+                if is_disabled is None:
+                    # Use human-like click
+                    await human_behavior.human_like_click(page, next_button_id.first)
+                    logger.info("Clicked next page button (btn-next-page)")
+                    return
+            
+            # Try within br-pagination-table by ID
+            pagination_locator = page.locator("br-pagination-table")
+            if await pagination_locator.count() > 0:
+                next_button_locator = pagination_locator.locator("#btn-next-page")
+                if await next_button_locator.count() > 0:
+                    is_disabled = await next_button_locator.get_attribute("disabled")
+                    if is_disabled is None:
+                        await human_behavior.human_like_click(page, next_button_locator.first)
+                        logger.info("Clicked next page button in br-pagination-table (btn-next-page)")
+                        return
+                
+                # Fallback: Look for button with chevron-right icon (next button indicator)
+                next_button_with_icon = pagination_locator.locator("button.br-button.circle:has(i.fa-chevron-right)")
+                if await next_button_with_icon.count() > 0:
+                    is_disabled = await next_button_with_icon.get_attribute("disabled")
+                    if is_disabled is None:
+                        await human_behavior.human_like_click(page, next_button_with_icon.first)
+                        logger.info("Clicked next page button (by icon)")
+                        return
+        except Exception as e:
+            logger.debug(f"Strategy 1 failed: {e}")
+            pass
+        
+        # Strategy 2: Common pagination selectors (fallback)
         next_selectors = [
+            "#btn-next-page",  # Direct ID selector
+            "button#btn-next-page",  # Button with ID
+            "br-pagination-table #btn-next-page",  # Within pagination component
+            "button.br-button.circle:has(i.fa-chevron-right)",  # Button with next icon
             "button:has-text('Próximo')",
             "button:has-text('Next')",
             "a:has-text('Próximo')",
@@ -489,7 +722,7 @@ async def navigate_to_next_page(page: Page) -> None:
                     if is_disabled is None and "disabled" not in class_name.lower():
                         # Use human-like click
                         await human_behavior.human_like_click(page, next_button_locator.first)
-                        logger.info("Clicked next page button")
+                        logger.info(f"Clicked next page button with selector: {selector}")
                         return
             except Exception:
                 continue

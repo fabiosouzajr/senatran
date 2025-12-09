@@ -130,24 +130,49 @@ async def check_for_rate_limit_error(page: Page) -> Optional[str]:
             except Exception:
                 continue
         
+        # Check for specific error message patterns in alerts/dialogs
+        try:
+            # Check for br-alert or error dialogs
+            alert_selectors = [
+                "br-alert",
+                "[class*='alert']",
+                "[class*='error']",
+                "[class*='mensagem']",
+                "[role='alert']",
+            ]
+            
+            for selector in alert_selectors:
+                try:
+                    alert_elements = await page.locator(selector).all()
+                    for alert in alert_elements:
+                        text = await alert.inner_text()
+                        if text and ("captcha" in text.lower() or "não foi possível validar" in text.lower()):
+                            return text.strip()
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        
         # Check page content for error messages
         page_text = await page.inner_text("body")
         if page_text:
-            error_keywords = [
+            # More specific error patterns
+            error_patterns = [
                 "não foi possível validar o captcha",
-                "erro",
+                "não foi possível validar o captcha para realizar a operação",
+                "erro!",
                 "captcha",
                 "rate limit",
                 "too many requests",
                 "429"
             ]
             
-            for keyword in error_keywords:
-                if keyword in page_text.lower():
+            for pattern in error_patterns:
+                if pattern in page_text.lower():
                     # Extract error message context
                     lines = page_text.split("\n")
                     for i, line in enumerate(lines):
-                        if keyword in line.lower():
+                        if pattern in line.lower():
                             # Return the error line and maybe next line
                             error_msg = line.strip()
                             if i + 1 < len(lines):
